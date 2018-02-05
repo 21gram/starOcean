@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Three.js - star ocean</title>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, shrink-to-fit=no&quot;">
+    <script src="./js/three.js"></script>
+    <style type="text/css">
+    * {
+        padding: 0;
+        margin: 0;
+    }
+    html,
+    body {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        background: #EEE;
+    }
+    div#canvas {
+        border: none;
+        width: 100%;
+        height: 100%;
+        background: #EEE;
+    }
+    </style>
+</head>
+<body>
+    
+<div id="canvas"></div>
+
+<script src="./js/CanvasRenderer.js"></script>
+<script src="./js/Projector.js"></script>
+<script src="./js/jquery-3.1.0.min.js"></script>
+<script src="./js/TweenMax.min.js"></script>
+<script src="./js/TrackballControls.js"></script>
+<script>
+    var renderer, camera, scene, light, cubeList, lock = false;
+    var loader = new THREE.ObjectLoader();
+    var clock = new THREE.Clock();
+    const WIDTH = 50;
+    const HEIGHT = 50;
+    const SEPERATION = 1;
+    const PI2 = Math.PI * 2;
+
+    var initThree = () => {
+        width = document.getElementById('canvas').clientWidth;
+        height = document.getElementById('canvas').clientHeight;
+        /*renderer = new THREE.WebGLRenderer({
+            antialias: true
+        });*/
+        renderer = new THREE.CanvasRenderer();
+        renderer.setSize(width, height);
+        document.getElementById('canvas').appendChild(renderer.domElement);
+        renderer.setClearColor(0x111111, 1.0);
+    }
+
+    var initCamera = () => {
+        camera = new THREE.PerspectiveCamera(50, width / height, 1, 500);
+        camera.position.x = 10;
+        camera.position.y = 3;
+        camera.position.z = 15;
+        camera.lookAt(scene.position);
+    }
+
+    var initScene = () => {
+        scene = new THREE.Scene();
+    }
+
+    var initLight = () => {
+        var ambientLight = new THREE.AmbientLight(0xffffff);
+        scene.add(ambientLight);
+
+        light = new THREE.DirectionalLight(0xffffff, 1, 0);
+        light.position.set(0, -10, 10);
+        scene.add(light);
+    };
+
+    var trackballControls;
+    var initCameraController = () => {     
+        trackballControls = new THREE.TrackballControls(camera);
+        console.log(trackballControls);
+        trackballControls.rotateSpeed = 1.0;
+        trackballControls.zoomSpeed = 1.0;
+        trackballControls.panSpeed = 1.0;
+        //trackballControls.noZoom=false;
+        //trackballControls.noPan=false;
+        trackballControls.staticMoving = true;
+        //trackballControls.dynamicDampingFactor=0.3;
+    };
+
+    var group = new THREE.Group();
+    var groupAni1 = new THREE.Group();
+    var groupAni2 = new THREE.Group();
+    groupAni1.myScale = 's';
+    groupAni1.lock = false;
+    groupAni2.myScale = 'l';
+    groupAni2.lock = false;
+
+    var initObject = () => {
+        var colors = [0xbeaf62, 0xdc9465, 0xaa876b, 0xbebebe, 0xbf8d8e];
+
+        var materials = [];
+        for(var i = 0; i < colors.length; i++) {
+            materials.push(new THREE.SpriteCanvasMaterial({
+                color: colors[i],
+                program: function (context) {
+                    context.beginPath();
+                    var color = colors[i];
+
+                    context.arc( 0, 0, 0.03, 0, PI2, true );
+                    context.fillStyle = color;
+                    context.fill();
+
+                    context.arc( 0, 0, 0.07, 0, PI2, true );
+                    context.globalAlpha = 0.15;
+                    context.fillStyle = color;
+                    context.fill();
+                }
+            }));
+        }
+
+        //画点
+        var program = function ( context ) {
+            context.beginPath();
+            var color = colors[Math.floor(Math.random() * colors.length)];
+
+            context.arc( 0, 0, 0.03, 0, PI2, true );
+            context.fillStyle = color;
+            context.fill();
+
+            context.arc( 0, 0, 0.07, 0, PI2, true );
+            context.globalAlpha = 0.1;
+            context.fillStyle = color;
+            context.fill();
+        };
+
+        var i = 0;
+        for (let ix = 0; ix < WIDTH; ix++) {
+          for (let iz = 0; iz < HEIGHT; iz++) {
+            var particle = new THREE.Sprite(materials[i%colors.length]);
+            //var seperation = (SEPERATION * Math.random() + 9)/10;
+            var seperation = 0.5;
+            particle.position.x = (ix * seperation - ((WIDTH * seperation) / 2))*(Math.random() * 2 + 8)/10;
+            particle.position.y = (Math.cos((ix / WIDTH) * Math.PI * 4) + Math.sin((iz / HEIGHT) * Math.PI * 4))*(Math.random() * 2 + 8)/18
+            particle.position.z = iz * seperation - ((HEIGHT * seperation) / 2)*(Math.random() * 2 + 8)/10;
+            particle.index = i;
+
+            if(i%6 == 2) {
+                particle.scale.x = particle.scale.y = (Math.random() * 2 + 9)/13;
+                groupAni1.add(particle);
+            } else if (i%6 == 5) {
+                particle.scale.x = particle.scale.y = (Math.random() * 2 + 9)/7;
+                groupAni2.add(particle);
+            } else {
+                particle.scale.x = particle.scale.y = (Math.random() * 2 + 9)/10;
+                group.add(particle);    
+            }
+            
+            i++;
+          }
+        }
+        scene.add(group);
+        scene.add(groupAni1);
+        scene.add(groupAni2);
+
+        render();
+    }
+
+    var render = function () {
+        if (!groupAni1.lock) {
+            groupAni1.lock = true;
+            var s = (groupAni1.myScale == 's') ? 2 : 0.5;
+            for (var i = 0; i < groupAni1.children.length; i++) {
+                TweenMax.to(
+                    groupAni1.children[i].scale,
+                    3,
+                    {   x: s,
+                        y: s
+                    }
+                );
+            }
+            setTimeout(()=>{
+                groupAni1.lock = false;
+                if (groupAni1.myScale == 's') {
+                    groupAni1.myScale = 'l';
+                } else {
+                    groupAni1.myScale = 's';
+                }
+            }, 3100);
+        }
+
+        if (!groupAni2.lock) {
+            groupAni2.lock = true;
+            var s = (groupAni2.myScale == 's') ? 2 : 0.5;
+            for (var i = 0; i < groupAni2.children.length; i++) {
+                TweenMax.to(
+                    groupAni2.children[i].scale,
+                    3,
+                    {   x: s,
+                        y: s
+                    }
+                );
+            }
+            setTimeout(()=>{
+                groupAni2.lock = false;
+                if (groupAni2.myScale == 's') {
+                    groupAni2.myScale = 'l';
+                } else {
+                    groupAni2.myScale = 's';
+                }
+            }, 3100);
+        }
+        
+        var delta = clock.getDelta();
+        trackballControls.update(delta);
+
+        requestAnimationFrame(render);
+        renderer.render(scene, camera);
+    };
+
+
+    var threeStart = () => {
+        initThree();
+        initScene();
+        initCamera();        
+        initCameraController();
+        initLight();
+        initObject();
+        render();
+    };
+
+    threeStart();
+</script>
+</body>
+</html>
