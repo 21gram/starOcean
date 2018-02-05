@@ -38,8 +38,8 @@
     var renderer, camera, scene, light, cubeList, lock = false;
     var loader = new THREE.ObjectLoader();
     var clock = new THREE.Clock();
-    const WIDTH = 50;
-    const HEIGHT = 50;
+    const WIDTH = 100;
+    const HEIGHT = 100;
     const SEPERATION = 1;
     const PI2 = Math.PI * 2;
 
@@ -120,27 +120,12 @@
             }));
         }
 
-        //画点
-        var program = function ( context ) {
-            context.beginPath();
-            var color = colors[Math.floor(Math.random() * colors.length)];
-
-            context.arc( 0, 0, 0.03, 0, PI2, true );
-            context.fillStyle = color;
-            context.fill();
-
-            context.arc( 0, 0, 0.07, 0, PI2, true );
-            context.globalAlpha = 0.1;
-            context.fillStyle = color;
-            context.fill();
-        };
-
         var i = 0;
         for (let ix = 0; ix < WIDTH; ix++) {
           for (let iz = 0; iz < HEIGHT; iz++) {
             var particle = new THREE.Sprite(materials[i%colors.length]);
             //var seperation = (SEPERATION * Math.random() + 9)/10;
-            var seperation = 0.5;
+            var seperation = 1;
             particle.position.x = (ix * seperation - ((WIDTH * seperation) / 2))*(Math.random() * 2 + 8)/10;
             particle.position.y = (Math.cos((ix / WIDTH) * Math.PI * 4) + Math.sin((iz / HEIGHT) * Math.PI * 4))*(Math.random() * 2 + 8)/18
             particle.position.z = iz * seperation - ((HEIGHT * seperation) / 2)*(Math.random() * 2 + 8)/10;
